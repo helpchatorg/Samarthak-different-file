@@ -11,45 +11,13 @@ let currentCamTask = "";
 let isModelsLoaded = false;
 let currentReportStudent = null;
 
+// Local storage functions ko khali kar diya gaya hai
 function saveToLocal() {
-    const payload = { config, db, students, attendances };
-    localStorage.setItem('Samarthak_DB', JSON.stringify(payload));
+    // Local storage mein data save karne wala logic hata diya gaya hai
 }
 
 function loadFromLocal() {
-    const raw = localStorage.getItem('Samarthak_DB');
-    if (raw) {
-        const data = JSON.parse(raw);
-        config = data.config || config;
-        db = data.db || db;
-        students = data.students || students;
-        attendances = data.attendances || [];
-        
-        if(config.libName) {
-            document.getElementById('displayLibName').innerText = config.libName;
-            document.getElementById('displayUPI').innerText = "Pay to: " + config.upi;
-            document.getElementById('feeDisplayUPI').innerText = "Pay to: " + config.upi;
-            document.getElementById('libName').value = config.libName;
-            document.getElementById('totalSeatsConfig').value = config.totalSeats;
-            document.getElementById('ownerUPI').value = config.upi;
-            document.getElementById('ownerMobile').value = config.mobile;
-            document.getElementById('ownerAddress').value = config.address;
-            document.getElementById('ownerPin').value = config.pin;
-            if(config.signature) {
-                sigData = config.signature;
-                const prev = document.getElementById('sig-preview-img');
-                prev.src = sigData; prev.style.display = 'block';
-            }
-            const dropdown = document.getElementById('shift');
-            dropdown.innerHTML = '<option value="">-- Choose a Shift --</option>';
-            config.shifts.forEach(s => {
-                const timeRange = s.start && s.end ? ` (${s.start}-${s.end})` : "";
-                dropdown.add(new Option(`${s.name}${timeRange} (₹${s.price})`, s.id));
-            });
-            renderShiftList();
-            renderAdminAttendance();
-        }
-    }
+    // Local storage se data load karne wala logic hata diya gaya hai
 }
 
 async function loadModels() {
@@ -480,7 +448,7 @@ function generatePDF(data, feeEntryIndex = -1) {
     const { jsPDF } = window.jspdf; const doc = new jsPDF(); let d = new Date(data.date);
     let currentApp = data.payApp, currentTxn = data.txnId, currentMode = data.mode, currentAmount = data.amount, currentSeat = data.seat, currentShift = data.shiftName, paymentMonth = getFullMonthName(new Date(data.date).toISOString().slice(0, 7));
     if(feeEntryIndex !== -1 && data.feeHistory && data.feeHistory[feeEntryIndex]) { const selectedFee = data.feeHistory[feeEntryIndex], feeMonthDate = new Date(selectedFee.month + "-01"); d = new Date(feeMonthDate); d.setMonth(d.getMonth() + 1); d.setDate(new Date(data.date).getDate()); currentApp = selectedFee.payApp; currentTxn = selectedFee.txnId; currentMode = selectedFee.mode; currentAmount = selectedFee.amount; paymentMonth = getFullMonthName(selectedFee.month); if(selectedFee.seatAtTime) currentSeat = selectedFee.seatAtTime; if(selectedFee.shiftAtTime) currentShift = selectedFee.shiftAtTime; }
-    else if(data.feeHistory && data.feeHistory.length > 0) { const firstFee = data.feeHistory[0], feeMonthDate = new Date(firstFee.month + "-01"); d = new Date(feeMonthDate); d.setMonth(d.getMonth() + 1); d.setDate(new Date(data.date).getDate()); currentApp = firstFee.payApp; currentTxn = firstFee.txnId; currentMode = firstFee.mode; currentAmount = firstFee.amount; paymentMonth = getFullMonthName(firstFee.month); if(firstFee.seatAtTime) currentSeat = firstFee.seatAtTime; if(firstFee.shiftAtTime) currentShift = firstFee.shiftAtTime; }
+    else if(data.feeHistory && data.feeHistory.length > 0) { const firstFee = data.feeHistory[0], feeMonthDate = new Date(firstFee.month + "-01"); d = new Date(firstFee.month + "-01"); d.setMonth(d.getMonth() + 1); d.setDate(new Date(data.date).getDate()); currentApp = firstFee.payApp; currentTxn = firstFee.txnId; currentMode = firstFee.mode; currentAmount = firstFee.amount; paymentMonth = getFullMonthName(firstFee.month); if(firstFee.seatAtTime) currentSeat = firstFee.seatAtTime; if(firstFee.shiftAtTime) currentShift = firstFee.shiftAtTime; }
     else d.setDate(d.getDate() + 30);
     const dueDateStr = formatAppDate(d); doc.setFontSize(22); doc.setTextColor(37, 99, 235); doc.text(config.libName.toUpperCase(), 105, 20, {align:"center"});
     doc.setFontSize(9); doc.setTextColor(100); doc.text(`${config.address} - ${config.pin}`, 105, 26, {align:"center"}); doc.text("OFFICIAL REGISTRATION RECEIPT", 105, 32, {align:"center"}); doc.line(20, 35, 190, 35);
