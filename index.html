@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samarthak - Library Management</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="month-modal" class="modal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">Select Month</h3>
+        <p style="font-size:0.8rem; color:var(--grey);">Select the month for the attendance report.</p>
+        <input type="month" id="report-month-input" style="margin-bottom:15px;">
+        <button onclick="confirmDownloadReport()" style="background:var(--primary);">Download PDF</button>
+        <button onclick="closeMonthModal()" style="background:var(--grey); margin-top:8px;">Cancel</button>
+    </div>
+</div>
+
+<div id="login-sec">
+    <div class="login-card">
+        <div class="login-header">
+            <div style="width:50px; height:50px; background:var(--primary); border-radius:12px; margin: 0 auto 15px; display:flex; align-items:center; justify-content:center;">
+                <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 9-4.09V17h2V7L12 2z"/><path d="M3.88 10.15L12 13.85l8.12-3.7V17l-8.12 3.7-8.12-3.7v-6.85z"/></svg>
+            </div>
+            <h1>Samarthak</h1>
+            <p id="login-type-label" style="color:var(--grey); font-size:0.9rem;">Admin Dashboard</p>
+        </div>
+
+        <div id="admin-form">
+            <div class="input-group">
+                <label>Admin ID</label>
+                <input type="number" id="adminId" oninput="hideError('err-login-id'); if(value.length>10) value=value.slice(0,10)" placeholder="Enter 10 digit ID">
+                <div class="error-msg" id="err-login-id">10-digit Admin ID is required</div>
+            </div>
+            <div class="input-group pass-wrapper">
+                <label>Password</label>
+                <input type="password" id="adminPass" oninput="hideError('err-login-pass')" placeholder="Enter password">
+                <span class="toggle-pass" onclick="togglePasswordVisibility('adminPass')">SHOW</span>
+                <div class="error-msg" id="err-login-pass">Password is required</div>
+            </div>
+            <button onclick="handleLogin()" style="margin-top: 10px; box-shadow: 0 4px 12px rgba(37,99,235,0.2);">Login Dashboard</button>
+            <button onclick="toggleLoginType('student')" style="background:transparent; color:var(--primary); border:none; padding:5px; font-size:0.8rem; margin-top:10px; text-decoration:underline;">Switch to Student Dashboard</button>
+        </div>
+
+        <div id="student-form" style="display:none;">
+            <div class="input-group">
+                <label>Registration Number</label>
+                <div class="reg-prefix-group">
+                    <span>REG</span>
+                    <input type="number" id="stuReg" oninput="hideError('err-stu-reg'); if(value.length>10) value=value.slice(0,10)" placeholder="Enter 10 digits">
+                </div>
+                <div class="error-msg" id="err-stu-reg">Please enter 10-digit registration number</div>
+            </div>
+            <div class="input-group">
+                <label>Mobile Number</label>
+                <input type="number" id="stuMobile" oninput="hideError('err-stu-mob'); if(value.length>10) value=value.slice(0,10)" placeholder="Enter registered mobile">
+                <div class="error-msg" id="err-stu-mob">10-digit mobile number is required</div>
+            </div>
+            <button onclick="handleStudentLogin()" style="margin-top: 10px; background: #4f46e5;">Access Dashboard</button>
+            <button onclick="toggleLoginType('admin')" style="background:transparent; color:var(--primary); border:none; padding:5px; font-size:0.8rem; margin-top:10px; text-decoration:underline;">Switch to Admin Dashboard</button>
+        </div>
+        <div id="login-main-err" style="color:var(--booked); font-size:0.8rem; text-align:center; margin-top:15px; display:none; font-weight:bold;">Invalid Credentials</div>
+    </div>
+</div>
+
+<div class="container" id="main-app">
+    <div id="owner-sec" class="section active">
+        <div class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2>System Configuration</h2>
+                <button onclick="logoutAdmin()" style="width:auto; padding:8px 15px; background:var(--booked); margin:0; font-size:0.7rem;">LOGOUT</button>
+            </div>
+            <div class="grid-2-col">
+                <div class="input-group">
+                    <label>Library Name</label>
+                    <input type="text" id="libName" oninput="hideError('err-libName')" placeholder="Enter Full Library Name">
+                    <div class="error-msg" id="err-libName">Library name is required</div>
+                </div>
+                <div class="input-group">
+                    <label>Owner Mobile Number</label>
+                    <input type="tel" id="ownerMobile" oninput="hideError('err-ownerMobile')" maxlength="10" placeholder="Enter Mobile Number">
+                    <div class="error-msg" id="err-ownerMobile">Valid 10-digit mobile number is required</div>
+                </div>
+            </div>
+            
+            <div class="grid-2-col">
+                <div class="input-group">
+                    <label>Full Library Address</label>
+                    <textarea id="ownerAddress" oninput="hideError('err-ownerAddress')" rows="1" placeholder="Street, City, State"></textarea>
+                    <div class="error-msg" id="err-ownerAddress">Library address is required</div>
+                </div>
+                <div class="input-group">
+                    <label>PIN Code</label>
+                    <input type="number" id="ownerPin" oninput="hideError('err-ownerPin'); if(value.length>6) value=value.slice(0,6)" placeholder="6-digit PIN CODE">
+                    <div class="error-msg" id="err-ownerPin">Valid 6-digit PIN CODE is required</div>
+                </div>
+            </div>
+
+            <div class="grid-2-col">
+                <div class="input-group">
+                    <label>Total Seating Capacity</label>
+                    <input type="number" id="totalSeatsConfig" oninput="hideError('err-totalSeats')" placeholder="e.g. 50">
+                    <div class="error-msg" id="err-totalSeats">Please enter a valid numeric capacity</div>
+                </div>
+                <div class="input-group">
+                    <label>Merchant UPI ID</label>
+                    <input type="text" id="ownerUPI" oninput="hideError('err-ownerUPI')" placeholder="e.g. mobile@upi">
+                    <p class="info-text">All online payment amounts will be settled in this UPI ID.</p>
+                    <div class="error-msg" id="err-ownerUPI">Invalid UPI Format</div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>Owner Signature</label>
+                <input type="file" id="sigInput" accept="image/*" onclick="this.value=null;" onchange="hideError('err-sig'); initCrop(this, 'sig')">
+                <p class="info-text" style="color: var(--primary); font-weight: 600;">Note: For better visibility, please upload a clear photo of your signature on a white background or use a background-removed PNG image.</p>
+                <div class="error-msg" id="err-sig">Signature is required for receipts</div>
+                <div class="crop-container" id="sig-crop-box">
+                    <img id="sig-crop-image">
+                    <div class="crop-controls">
+                        <button class="apply-crop-btn" onclick="applyCrop('sig')">Crop & Save Signature</button>
+                        <button class="cancel-crop-btn" onclick="cancelCrop('sig')">Cancel</button>
+                    </div>
+                </div>
+                <img id="sig-preview-img" class="preview-img sig-preview" src="" alt="Signature Preview">
+            </div>
+
+            <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
+            <h2>Shift Management (Clock-Based)</h2>
+            <div id="shiftList"></div>
+            <div style="background: #f1f5f9; padding: 15px; border-radius: 12px; margin-top: 10px;">
+                <input type="hidden" id="editShiftId">
+                <label>Shift Label</label>
+                <input type="text" id="newShiftName" placeholder="e.g. Morning Shift" style="margin-bottom:8px">
+                <div class="grid-2-col" style="margin-bottom:8px">
+                    <div><label>Start Time</label><input type="time" id="newShiftStart"></div>
+                    <div><label>End Time</label><input type="time" id="newShiftEnd"></div>
+                </div>
+                <label>Price (INR)</label>
+                <input type="number" id="newShiftPrice" placeholder="e.g. 1500">
+                <div class="error-msg" id="err-shift-setup" style="margin-bottom:10px;">Please add at least one shift to proceed</div>
+                <button id="addShiftBtn" onclick="addNewShift()" style="background: #4f46e5; margin-top:10px;">+ Add New Shift</button>
+            </div>
+            <button onclick="saveOwnerSettings()" style="background: #10b981; margin-top: 25px; font-size: 1rem;">Complete Setup</button>
+        </div>
+    </div>
+
+    <div id="booking-sec" class="section">
+        <h3 id="displayLibName" style="text-align:center; margin-bottom: 15px; color: var(--primary);">Samarthak</h3>
+        <div class="panel">
+            <div id="student-details-step">
+                <h2 id="formTitle">Student Information</h2>
+                <input type="hidden" id="editId">
+                <div class="grid-2-col">
+                    <div class="input-group">
+                        <label>Applicant Name</label>
+                        <input type="text" id="name" oninput="hideError('err-name')" placeholder="Enter Full Name">
+                        <div class="error-msg" id="err-name">Applicant name is required</div>
+                    </div>
+                    <div class="input-group">
+                        <label>Guardian/Father's Name</label>
+                        <input type="text" id="fname" oninput="hideError('err-fname')" placeholder="Enter Full Name">
+                        <div class="error-msg" id="err-fname">Guardian information is required</div>
+                    </div>
+                </div>
+                <div class="grid-2-col">
+                    <div class="input-group">
+                        <label>Contact Number</label>
+                        <input type="tel" id="mobile" oninput="hideError('err-mobile')" maxlength="10" placeholder="Enter Contact Number">
+                        <div class="error-msg" id="err-mobile">Valid 10-digit contact number is required</div>
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" oninput="hideError('err-email')" placeholder="student@example.com">
+                        <div class="error-msg" id="err-email">Valid email format is required</div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Date of Birth</label>
+                    <input type="date" id="dob" oninput="hideError('err-dob')" placeholder="dd/mm/yyyy">
+                    <div class="error-msg" id="err-dob">Date of Birth is required</div>
+                </div>
+                <div class="input-group">
+                    <label>Student Photograph</label>
+                    <button onclick="openLiveCamera('registration')" style="background: #10b981; margin-bottom:10px;">Open Camera & Capture</button>
+                    <div class="error-msg" id="err-photo">Photograph capture is required</div>
+                    <img id="photo-preview-img" class="preview-img" src="" alt="Preview">
+                </div>
+                <div class="input-group">
+                    <label>Select Shift Plan</label>
+                    <select id="shift" onchange="hideError('err-shift-select'); updateShift()">
+                        <option value="">-- Choose a Shift --</option>
+                    </select>
+                    <div class="error-msg" id="err-shift-select">Please select a shift plan</div>
+                </div>
+                <button onclick="proceedToSeats()" id="proceedBtn" style="background: var(--selected);">Proceed to Seat Selection</button>
+            </div>
+
+            <div id="seat-selection-step" style="display:none;">
+                <h2>Seat Allocation</h2>
+                <div class="price-tag" id="priceDisplay">Payable: ₹0</div>
+                <div class="input-group">
+                    <label>Payment Mode</label>
+                    <select id="payMethod" onchange="toggleQR('main')">
+                        <option value="Cash">Cash at Counter</option>
+                        <option value="Online">Online UPI Payment</option>
+                    </select>
+                </div>
+                <div id="onlineDetailsArea" style="display:none; background:#f8fafc; padding:15px; border-radius:10px; border:1px solid #e2e8f0; margin-bottom:15px;">
+                    <div class="input-group">
+                        <label>Payment App</label>
+                        <select id="payApp" onchange="checkOtherApp('main')">
+                            <option value="PhonePe">PhonePe</option>
+                            <option value="Google Pay">Google Pay</option>
+                            <option value="Paytm">Paytm</option>
+                            <option value="Supermoney">Supermoney</option>
+                            <option value="Navi">Navi</option>
+                            <option value="BHIM">BHIM</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="otherAppNameArea" style="display:none;">
+                        <label>Enter App Name</label>
+                        <input type="text" id="otherAppName" oninput="hideError('err-otherApp')" placeholder="Specify App Name">
+                        <div class="error-msg" id="err-otherApp">App name is required</div>
+                    </div>
+                    <div class="input-group">
+                        <label>Transaction ID (Last 4-12 digits)</label>
+                        <input type="text" id="txnId" oninput="hideError('err-txnId')" placeholder="Enter Transaction ID">
+                        <div class="error-msg" id="err-txnId">Valid Transaction ID is required</div>
+                    </div>
+                </div>
+                <div id="qrArea" class="qr-section">
+                    <img id="qrImg" src="" alt="QR">
+                    <p id="displayUPI" style="font-size: 0.75rem; color: var(--primary); margin-top: 8px; font-weight: bold;"></p>
+                </div>
+                <div class="input-group">
+                    <label>Assigned Seat</label>
+                    <input type="text" id="seatDisplay" readonly inputmode="none" onfocus="this.blur()" placeholder="Pick a green seat">
+                    <div class="error-msg" id="err-seat">Please select a seat</div>
+                </div>
+                <button id="mainBtn" onclick="validateAndBook()">Self Confirm Your Registration</button>
+                <button onclick="backToDetails()" style="background:#94a3b8; margin-top: 10px;">Back to Details</button>
+            </div>
+            <button id="cancelEditBtn" onclick="resetForm()" style="display:none; background:var(--booked); margin-top:10px;">Cancel Modification</button>
+        </div>
+        <div class="panel" id="gridPanel" style="display:none;">
+            <h2 id="gridTitle">Real-time Availability</h2>
+            <div class="seat-grid" id="seatGrid"></div>
+        </div>
+    </div>
+
+    <div id="history-sec" class="section">
+        <div class="panel" style="background: transparent; border: none; box-shadow: none; padding: 10px 0;">
+            <div class="search-container">
+                <input type="text" id="searchInput" onkeyup="renderHistory()" placeholder="Search by Name, Reg No or Mobile...">
+                <div class="filter-tabs">
+                    <div class="filter-tab active" onclick="setHistoryFilter('all', this)">All</div>
+                    <div class="filter-tab" onclick="setHistoryFilter('paid', this)">Paid</div>
+                    <div class="filter-tab" onclick="setHistoryFilter('pending', this)">Pending</div>
+                    <div class="filter-tab" onclick="setHistoryFilter('attendance', this)">Attendance</div>
+                </div>
+            </div>
+        </div>
+        <h2 id="history-title" style="padding: 10px; font-size: 1rem;">Registered Records</h2>
+        <div id="historyBody"></div>
+
+        <div id="fee-panel" class="panel" style="display:none; margin-top:20px; border-top: 5px solid #6366f1; border-radius: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+                <h2 style="border:none; margin:0; font-size: 1rem;">Fees Deposit Center</h2>
+                <button onclick="document.getElementById('fee-panel').style.display='none'" style="width:auto; padding:8px 15px; background:#ef4444; margin:0; font-size:0.7rem;">CLOSE</button>
+            </div>
+            <p id="fee-student-name" style="font-weight:800; color:var(--primary); margin-bottom: 15px; background:#eff6ff; padding:10px; border-radius:10px; text-align:center;"></p>
+            <div style="background:#f8fafc; padding:15px; border-radius:12px; border: 1px solid #e2e8f0; margin-bottom:20px;">
+                <label style="color:var(--dark)">New Deposit Entry</label>
+                <input type="hidden" id="editFeeLogIndex">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:8px;">
+                    <div class="input-group"><label>Month</label><input type="month" id="feeMonth" style="padding:10px;"></div>
+                    <div class="input-group"><label>Amount (₹)</label><input type="number" id="feeAmount" readonly placeholder="Amount" style="padding:10px; background:#e2e8f0; cursor:not-allowed;"></div>
+                </div>
+                <div class="input-group">
+                    <label>Payment Mode</label>
+                    <select id="feePayMode" style="padding:10px;" onchange="toggleQR('fee')"><option value="Cash">Cash</option><option value="Online">Online</option></select>
+                </div>
+                <div id="feeOnlineDetails" style="display:none; margin-top:10px;">
+                    <div class="grid-2-col">
+                        <div class="input-group">
+                            <label>Payment App</label>
+                            <select id="feePayApp" onchange="checkOtherApp('fee')">
+                                <option value="PhonePe">PhonePe</option>
+                                <option value="Google Pay">Google Pay</option>
+                                <option value="Paytm">Paytm</option>
+                                <option value="Supermoney">Supermoney</option>
+                                <option value="Navi">Navi</option>
+                                <option value="BHIM">BHIM</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="feeOtherAppNameArea" style="display:none;">
+                            <label>App Name</label>
+                            <input type="text" id="feeOtherAppName" oninput="hideError('err-feeOtherApp')" placeholder="Specify App"><div class="error-msg" id="err-feeOtherApp">App name is required</div>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>Transaction ID</label>
+                        <input type="text" id="feeTxnId" oninput="hideError('err-feeTxnId')" placeholder="Txn ID"><div class="error-msg" id="err-feeTxnId">Valid Transaction ID is required</div>
+                    </div>
+                    <div id="feeQrArea" class="qr-section" style="display:none;">
+                        <img id="feeQrImg" src="" alt="QR">
+                        <p id="feeDisplayUPI" style="font-size: 0.75rem; color: var(--primary); margin-top: 8px; font-weight: bold;"></p>
+                    </div>
+                </div>
+                <button id="btnFeeSubmit" onclick="saveNewMonthlyFee()" style="margin-top:10px; background:#10b981; padding:12px;">Deposit Fee</button>
+                <button id="btnFeeCancel" onclick="resetFeeForm()" style="display:none; margin-top:10px; background:var(--booked); padding:12px;">Cancel Modification</button>
+            </div>
+            <div id="fee-logs-container" class="fee-history-wrapper">
+                <table class="fee-history-table">
+                    <thead><tr><th>Month</th><th>Entry Date</th><th>Amount</th><th>Mode/App</th><th>Txn ID</th><th>Actions</th></tr></thead>
+                    <tbody id="feeLogsBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="student-dash-sec" class="section">
+        <div class="panel">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+                <h2>My Student Profile</h2>
+                <button onclick="logout()" style="width:auto; padding:8px 15px; background:var(--booked); margin:0; font-size:0.7rem;">LOGOUT</button>
+            </div>
+            <div id="stu-profile-content">
+                <img id="stu-display-photo" src="" style="width:80px; height:80px; border-radius:12px; object-fit:cover; border:3px solid #fff; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+                <div>
+                    <h3 id="stu-display-name" style="margin:0; color:var(--primary);"></h3>
+                    <p id="stu-display-reg" style="margin:5px 0; font-size:0.75rem; font-weightbold; color:var(--grey);"></p>
+                    <p id="stu-display-mobile" style="margin:2px 0; font-size:0.75rem;"></p>
+                    <p id="stu-display-email" style="margin:2px 0; font-size:0.75rem;"></p>
+                </div>
+            </div>
+            <div style="margin-top:20px; background:#f0f7ff; padding:15px; border-radius:15px; border:1px solid #cce3ff; text-align:center;">
+                <h3 style="margin:0 0 10px 0; font-size:0.9rem;">DAILY ATTENDANCE</h3>
+                <button id="btn-attendance" onclick="openLiveCamera('attendance')" style="background:#22c55e;">Mark My Attendance (Live Photo)</button>
+                <div id="attendance-status" style="margin-top:10px; font-size:0.75rem; font-weight:bold;"></div>
+            </div>
+            <div class="grid-2-col" style="margin-top:20px; margin-bottom:20px;">
+                <div style="background:#fff; border:1.5px solid #e2e8f0; padding:15px; border-radius:12px; text-align:center;">
+                    <label style="color:var(--grey); margin-bottom:5px;">ASSIGNED SEAT</label>
+                    <div id="stu-display-seat" style="font-size:1.5rem; font-weight:800; color:var(--dark);"></div>
+                </div>
+                <div style="background:#fff; border:1.5px solid #e2e8f0; padding:15px; border-radius:12px; text-align:center;">
+                    <label style="color:var(--grey); margin-bottom:5px;">SHIFT PLAN</label>
+                    <div id="stu-display-shift" style="font-size:1rem; font-weight:800; color:var(--dark);"></div>
+                </div>
+            </div>
+            <div style="background:#fff4f4; border:1px solid #fecaca; padding:15px; border-radius:12px; margin-bottom:20px; text-align:center;">
+                <label style="color:#ef4444; font-weight:bold; font-size:0.7rem;">NEXT FEE DUE DATE</label>
+                <div id="stu-display-due" style="font-size:1.2rem; font-weight:800; color:#b91c1c;"></div>
+                <p style="font-size:0.7rem; color:#64748b; margin-top:5px;">Registration Date: <span id="stu-display-regdate"></span></p>
+            </div>
+            <h2>Fee Payment History</h2>
+            <div class="fee-history-wrapper">
+                <table class="fee-history-table">
+                    <thead><tr><th>Month</th><th>Amount</th><th>Mode</th><th>Txn ID</th><th>Receipt</th></tr></thead>
+                    <tbody id="stu-fee-tbody"></tbody>
+                </table>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+                <h2 style="margin:0;">Attendance History</h2>
+                <button onclick="openReportModal(loggedInStudent)" style="width:auto; padding:8px 15px; background:var(--primary); margin:0; font-size:0.7rem;">Download Report</button>
+            </div>
+            <div class="fee-history-wrapper">
+                <table class="fee-history-table">
+                    <thead><tr><th>Date</th><th>Time</th><th>Status</th></tr></thead>
+                    <tbody id="stu-attendance-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-nav" id="admin-bottom-nav">
+    <div class="nav-item active" onclick="switchTab('owner-sec', this)">Admin Dashboard</div>
+    <div class="nav-item" onclick="switchTab('booking-sec', this)">Student Information</div>
+    <div class="nav-item" onclick="switchTab('history-sec', this)">History</div>
+</div>
+
+<div id="cam-overlay" class="camera-overlay">
+    <div class="camera-wrap"><video id="live-video" autoplay muted playsinline></video></div>
+    <div id="cam-status" class="cam-status">Initializing Human Detection...</div>
+    <div class="cam-btns">
+        <button id="capture-btn" style="background:#10b981; display:none;" onclick="captureFinalPhoto()">Capture Photo</button>
+        <button style="background:#ef4444;" onclick="closeLiveCamera()">Close Camera</button>
+    </div>
+</div>
+
+<div id="zoom-overlay" class="zoom-overlay" onclick="this.style.display='none'"><img id="zoomed-img" src="" alt="Zoomed Photo"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
